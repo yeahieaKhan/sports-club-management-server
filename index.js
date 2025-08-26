@@ -36,6 +36,29 @@ async function run() {
 
     //courts related api
 
+    // API: Get all users with role "user"
+    app.get("/api/users", async (req, res) => {
+      try {
+        const usersCollections = db.collection("users");
+        const users = await usersCollections.find({ role: "user" }).toArray();
+        res.status(200).json(users);
+      } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
+    // API: Get all users with role "user"
+    app.get("/api/members", async (req, res) => {
+      try {
+        const usersCollections = db.collection("users");
+        const users = await usersCollections.find({ role: "member" }).toArray();
+        res.status(200).json(users);
+      } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
+
     app.post("/users", async (req, res) => {
       const email = req.body.email;
       const userExist = await usersCollections.findOne({ email });
@@ -232,20 +255,24 @@ async function run() {
       }
     });
 
-    //
     app.patch("/courts/:id", async (req, res) => {
       const courtId = req.params.id;
-      const email = req.query.email;
+      const email = req.query.email; // user email
       const updateData = req.body;
 
       try {
         const result = await courtsCollection.updateOne(
-          { _id: new ObjectId(courtId), email },
+          { _id: new ObjectId(courtId), created_by: email }, // <-- change here
           { $set: updateData }
         );
 
-        res.send({ message: "Court updated", result });
+        if (result.matchedCount === 0) {
+          return res.status(404).send({ message: "Court not found" });
+        }
+
+        res.send({ message: "Court updated successfully", result });
       } catch (error) {
+        console.error(error);
         res.status(500).send({ message: "Update failed", error });
       }
     });
